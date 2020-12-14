@@ -1,0 +1,26 @@
+1:
+ADD $S0, $S0, $S1
+
+
+2:
+MUL $T0, $S3, $S4
+ADD $T1, $S1, $S2
+ADD $S0, $T0, $T1
+
+
+3:
+SUB $T0, $S1, $S2
+DIV $S0, $T0, S$0
+
+
+4:
+MUL $T0, $S1, $S2
+DIV $T1, $S0, $S1
+SUB $S0, $T0, $T1
+
+
+5:
+MUL $T0, $S2, $S2
+MUL $T0, $T0, $S2
+DIV $T1, $S3, $S4
+DIV $S1, $T0, $T1
