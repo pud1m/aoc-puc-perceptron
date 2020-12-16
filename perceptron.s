@@ -1,123 +1,153 @@
-################### NEURÔNIO PERCEPTRON ---- THALLES SALES, PUC MINAS 2020/2
+#Rede Neural
+#Neuronio Perceptron
+#Marcelo Teixeira Alves, Thalles Sales
 
-################### Declaração de variáveis
 .data
-mes_1:            .asciiz "Insira o valor 1\n"
-mes_2:            .asciiz "Insira o valor 2\n"
-mes_esp:          .asciiz "Insira o resultado esperado\n"
-
+#Primeiro e segundo valor a serem somados
 val_1:            .word 1
 val_2:            .word 1
-val_esp:          .word 2
-peso_1:           .float 0.8
-peso_2:           .float 0.3
 
-tx_aprend:        .float 0.05
+val_3:            .word 1
+val_4:            .word 1
 
-val_check_atual:  .word 0
-quant_entradas:   .word 0
+#Dois pesos 
+peso_1:           .float 0.0
+peso_2:           .float 0.8
 
-loop_final_i:     .word 1
-loop_final_j:     .word 1
-loop_final_mes:   .asciiz "Resultados finais para todas as combinacoes de 1 e 5\n"
+#Taxa de aprendizado padrao
+taxa_aprendizado:        .float 0.05
 
+#Erro
+valor_erro:	.float 0.0
 
+#Epoca
+initial_epoca:  .word 1
+tamanho_epoca:  .word 6 
 
-################### Lógica
-.text
-processa_entrada:
-# Processa um par de entradas e retorna um novo peso
-            ### Formato do que deve ser recebido:
-            # t0 = val_1
-            # t1 = val_2
-            # t2 = val_esp
-            # t8 = peso_1
-            # t9 = peso_2
-            ### Registradores temporários usados:
-            # t3 = val_1*peso_1
-            # t4 = val_2*peso_2
-            # t5 = t3 - t4 (resultado atual)
-            # t6 = erro
-            # t7 = valor de retorno
-              mul $t3, $t0, $t8
-              mul $t4, $t1, $t9
-              add $t5, $t3, $t4
-              sub $t6, $t2, $t5
-              mul $t7, $t6, tx_aprend
-              mul $t7, $t7, $t0
-              # RETORNO: t7
+#Strings
+quebra_uma_result:  .asciiz "\n"
+quebra_duas_result: .asciiz "\n\n"
+entrada_result:	    .asciiz "Entrada:"
+saida_result:	    .asciiz "Saida:"
+operador_result:    .asciiz "+"
 
-recebe_entrada:
-# Insere parâmetros inputados pelo usuário nas variáveis apropriadas
-              slt $t0, quant_entradas, 6
-              beq $t0, $zero, retorna_resultado
-              #### Imprime mensagem 1
-              li $v0, 4
-                la $a0, mes_1
-                syscall
-              # Preenche val_1
-              li $v0, 5
-                syscall
-                sw $v0, val_1
-              #### Imprime mensagem 2
-              li $v0, 4
-                la $a0, mes_2
-                syscall
-              # Preenche val_2
-              li $v0, 5
-                syscall
-                sw $v0, val_2
-              #### Imprime mensagem de valor esperado
-              li $v0, 4
-                la $a0, mes_esp
-                syscall
-              # Preenche val_esp
-              li $v0, 5
-                syscall
-                sw $v0, val_esp
+.text 
+	#Atribuindo valores salvos na memoria em registradores
+	lw $s0, initial_epoca
+	lw $s1, tamanho_epoca
+	lw $s2, val_1
+	lw $s3, val_2
+	lw $s4, val_3
+	lw $s5, val_4
+	l.s $f0, peso_1
+	l.s $f1, peso_2
+	l.s $f2, taxa_aprendizado
+	l.s $f3, valor_erro
+	
+	
+percorre_epoca:
+	#Laco While para percorrer toda Epoca caso a condicao seja falsa
+	beq $s0, $s1, teste
+	
+	#Convertendo valores inteiros para operacoes em FLOAT
+	mtc1 $s2, $f4
+	cvt.s.w $f4, $f4
+	
+	mtc1 $s3, $f5
+	cvt.s.w $f5, $f5
+	
+	#Somando valores da Epoca para obter o valor esperado
+	add.s $f6, $f4, $f5
+	
+	#Multiplicando valores pelos seus respectivos pesos
+	mul.s $f4, $f4, $f0 
+	mul.s $f5, $f5, $f1 
+	
+	#Somando os dois resultados e subtraindo pelo valor esperado para obter o erro
+	add.s $f7, $f4, $f5
+	sub.s $f3, $f6, $f7
 
-processa_entradas_router:
-# Pega os dois valores de entrada, o valor esperado e os respectivos pesos, e os passa pelo processa_entrada
-              bne val_check_atual, $zero, process_val_2
+	#Atualizando valores dos pesos
+	#peso1
+	mul.s $f8, $f3, $f2 #result = erro * taxa de aprendizado
+	mul.s $f8, $f8, $f4 #result = result * entrada1
+	add.s $f0, $f0, $f8 #peso1 = peso1 + result
+	
+	#peso2
+	mul.s $f8, $f3, $f2 #result = erro * taxa de aprenziado
+	mul.s $f8, $f8, $f5 #result = result * entrada2
+	add.s $f1, $f1, $f8 #peso2 = peso2 + result
+	
+	#Atribuindo +1 aos valores da epoca
+	addi $s2, $s2, 1
+	addi $s3, $s3, 1
+	
+	#Atribuindo +1 ao valor do registrador $s0 e retornando para o looping(While)
+	addi $s0, $s0, 1
+	j percorre_epoca
+	
 
-              #### Valor 1
-              add $t0, val_1, $zero
-              add $t1, val_2, $zero
-              add $t2, val_esp, $zero
-              add $t8, peso_1, $zero
-              add $t9, peso_2, $zero
-              sw $t7, peso_1
-              addi $t7, val_check_atual, 1
-              sw $t7, val_check_atual
-              j fim_func_router
+teste:
+	#Laco While para percorrer toda Epoca caso a condicao seja falsa
+	beq $t0, 5, fim
+	
+	#Convertendo valores inteiros para operacoes em FLOAT
+	mtc1 $s4, $f4
+	cvt.s.w $f4, $f4
+	
+	mtc1 $s5, $f5
+	cvt.s.w $f5, $f5
+	
+	#Somando valores da Epoca para obter o valor esperado
+	add.s $f6, $f4, $f5
+	
+	#Multiplicando valores pelos seus respectivos pesos
+	mul.s $f4, $f4, $f0 
+	mul.s $f5, $f5, $f1 
+	
+	#Somando os dois resultados
+	add.s $f7, $f4, $f5
+	
+	#Imprime Entrada
+	li $v0, 4
+	la $a0, entrada_result
+	syscall
+	
+	li $v0, 1
+	move $a0, $s4
+	syscall
+	
+	li $v0, 4
+	la $a0, operador_result
+	syscall
+	
+	li $v0, 1
+	move $a0, $s5
+	syscall
+	
+	li $v0, 4
+	la $a0, quebra_uma_result
+	syscall
+	
+	li $v0, 4
+	la $a0, saida_result
+	syscall
+	
+	li $v0, 2
+	mov.s $f12, $f7
+	syscall
+	
+	li $v0, 4
+	la $a0, quebra_duas_result
+	syscall
+	
+	#Atribuindo +1 aos valores da epoca
+	addi $s4, $s5, 1
+	addi $s5, $s5, 1
+	
+	#Atribuindo +1 ao valor do registrador $s0 e retornando para o looping(While)
+	addi $t0, $t0, 1
+	j teste 
+	
+fim:
 
-              #### Valor 2
-              process_val_2:
-                add $t0, val_2, $zero
-                add $t1, val_1, $zero
-                add $t2, val_esp, $zero
-                add $t8, peso_2, $zero
-                add $t9, peso_1, $zero
-                sw $t7, peso_2
-                sw $zero, val_check_atual
-                j fim_func_router
-
-              #### Finaliza execução da função
-              # Aumenta em 1 o número de entradas processadas e pula para recebe_entrada de novo
-              fim_func_router:
-                addi $t7, quant_entradas, 1
-                sw $t7, quant_entradas
-                j recebe_entrada
-
-retorna_resultado:
-# Retorna resultados, para valores de 1 a 5, usando os pesos processados
-              slt $9, loop_final_i, 
-
-main:         
-              # Imprime mensagem 1
-              li $v0, 4
-                la $a0, mes_1
-                syscall
-              # Preenche val_1
-              li $v0, 5
-                syscall
